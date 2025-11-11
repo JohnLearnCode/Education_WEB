@@ -1,7 +1,10 @@
 import { CreateCourseRequest, UpdateCourseRequest, Course, CourseQueryParams, CourseResponse, InstructorInfo } from "../types/course/request";
 import * as courseModel from '../model/course.js';
 import * as authModel from '../model/auth.js';
+import * as categoryModel from '../model/category.js';
+import * as categoryService from './category.js';
 import { CourseMessage } from '../types/course/enums.js';
+import { CategoryMessage } from '../types/category/enums.js';
 
 /**
  * Get instructor info by ID
@@ -23,11 +26,20 @@ const getInstructorInfo = async (instructorId: string): Promise<InstructorInfo |
  * Create a new course (instructor only)
  */
 export const createCourse = async (courseData: CreateCourseRequest, instructorId: string): Promise<CourseResponse> => {
+  // Verify category exists
+  const category = await categoryModel.getCategoryById(courseData.categoryId);
+  if (!category) {
+    throw new Error(CategoryMessage.CATEGORY_NOT_FOUND);
+  }
+
   const course = await courseModel.createCourse(courseData, instructorId);
   
   if (!course) {
     throw new Error(CourseMessage.FAIL_CREATE);
   }
+
+  // Increment course count in category
+  await categoryService.incrementCourseCount(courseData.categoryId);
 
   // Get instructor info
   const instructor = await getInstructorInfo(instructorId);
@@ -36,7 +48,12 @@ export const createCourse = async (courseData: CreateCourseRequest, instructorId
   const response: CourseResponse = {
     ...course,
     instructorId: course.instructorId.toString(),
-    instructor: instructor || undefined
+    categoryId: course.categoryId.toString(),
+    instructor: instructor || undefined,
+    category: {
+      _id: category._id!.toString(),
+      name: category.name
+    }
   };
 
   return response;
@@ -55,11 +72,19 @@ export const getCourseById = async (courseId: string): Promise<CourseResponse> =
   // Get instructor info
   const instructor = await getInstructorInfo(course.instructorId.toString());
 
+  // Get category info
+  const category = await categoryModel.getCategoryById(course.categoryId.toString());
+
   // Convert ObjectId to string for response
   const response: CourseResponse = {
     ...course,
     instructorId: course.instructorId.toString(),
-    instructor: instructor || undefined
+    categoryId: course.categoryId.toString(),
+    instructor: instructor || undefined,
+    category: category ? {
+      _id: category._id!.toString(),
+      name: category.name
+    } : undefined
   };
 
   return response;
@@ -85,6 +110,7 @@ export const getCoursesByInstructorId = async (
   const responseCourses: CourseResponse[] = courses.map(course => ({
     ...course,
     instructorId: course.instructorId.toString(),
+    categoryId: course.categoryId.toString(),
     instructor: instructor || undefined
   }));
 
@@ -113,11 +139,19 @@ export const updateCourse = async (
   // Get instructor info
   const instructor = await getInstructorInfo(instructorId);
 
+  // Get category info
+  const category = await categoryModel.getCategoryById(course.categoryId.toString());
+
   // Convert ObjectId to string for response
   const response: CourseResponse = {
     ...course,
     instructorId: course.instructorId.toString(),
-    instructor: instructor || undefined
+    categoryId: course.categoryId.toString(),
+    instructor: instructor || undefined,
+    category: category ? {
+      _id: category._id!.toString(),
+      name: category.name
+    } : undefined
   };
 
   return response;
@@ -127,11 +161,20 @@ export const updateCourse = async (
  * Delete course by ID (instructor only)
  */
 export const deleteCourse = async (courseId: string, instructorId: string): Promise<boolean> => {
+  // Get course to get categoryId before deleting
+  const course = await courseModel.getCourseById(courseId);
+  if (!course) {
+    throw new Error(CourseMessage.COURSE_NOT_FOUND);
+  }
+
   const success = await courseModel.deleteCourse(courseId, instructorId);
   
   if (!success) {
     throw new Error(CourseMessage.FAIL_DELETE);
   }
+
+  // Decrement course count in category
+  await categoryService.decrementCourseCount(course.categoryId.toString());
 
   return true;
 };
@@ -155,6 +198,7 @@ export const getAllCourses = async (
       return {
         ...course,
         instructorId: course.instructorId.toString(),
+        categoryId: course.categoryId.toString(),
         instructor: instructor || undefined
       };
     })

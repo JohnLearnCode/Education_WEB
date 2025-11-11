@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { CourseLevel, CourseCategory } from '../types/course/enums.js';
+import { CourseLevel } from '../types/course/enums.js';
 
 export const createCourseSchema = Joi.object({
   title: Joi.string()
@@ -29,12 +29,12 @@ export const createCourseSchema = Joi.object({
       'number.max': 'Giá khóa học quá lớn',
       'any.required': 'Giá khóa học là bắt buộc'
     }),
-  category: Joi.string()
-    .valid(...Object.values(CourseCategory))
+  categoryId: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
     .required()
     .messages({
-      'any.only': 'Danh mục khóa học không hợp lệ',
-      'any.required': 'Danh mục khóa học là bắt buộc'
+      'string.pattern.base': 'Category ID không hợp lệ',
+      'any.required': 'Category ID là bắt buộc'
     }),
   level: Joi.string()
     .valid(...Object.values(CourseLevel))
@@ -91,11 +91,11 @@ export const updateCourseSchema = Joi.object({
       'number.min': 'Giá khóa học không được âm',
       'number.max': 'Giá khóa học quá lớn'
     }),
-  category: Joi.string()
-    .valid(...Object.values(CourseCategory))
+  categoryId: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
     .optional()
     .messages({
-      'any.only': 'Danh mục khóa học không hợp lệ'
+      'string.pattern.base': 'Category ID không hợp lệ'
     }),
   level: Joi.string()
     .valid(...Object.values(CourseLevel))
@@ -149,11 +149,11 @@ export const courseQuerySchema = Joi.object({
       'number.min': 'Limit phải lớn hơn 0',
       'number.max': 'Limit không được quá 100'
     }),
-  category: Joi.string()
-    .valid(...Object.values(CourseCategory))
+  categoryId: Joi.string()
+    .pattern(/^[0-9a-fA-F]{24}$/)
     .optional()
     .messages({
-      'any.only': 'Danh mục khóa học không hợp lệ'
+      'string.pattern.base': 'Category ID không hợp lệ'
     }),
   level: Joi.string()
     .valid(...Object.values(CourseLevel))

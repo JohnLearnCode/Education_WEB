@@ -10,8 +10,8 @@ export interface Course extends BaseEntity {
   title: string;
   description: string;
   instructorId: ObjectId;
+  categoryId: ObjectId;
   price: number;
-  category: string;
   level: string;
   rating: number;
   ratingCount: number;
@@ -29,7 +29,7 @@ export interface CreateCourseRequest {
   title: string;
   description: string;
   price: number;
-  category: string;
+  categoryId: string;
   level: string;
   imageUrl?: string;
   totalDuration?: string;
@@ -41,7 +41,7 @@ export interface UpdateCourseRequest {
   title?: string;
   description?: string;
   price?: number;
-  category?: string;
+  categoryId?: string;
   level?: string;
   imageUrl?: string;
   totalDuration?: string;
@@ -69,7 +69,12 @@ export interface InstructorInfo {
 }
 
 // Course Response with instructor info
-export interface CourseResponse extends Omit<Course, 'instructorId'> {
+export interface CourseResponse extends Omit<Course, 'instructorId' | 'categoryId'> {
   instructorId: string;
+  categoryId: string;
   instructor?: InstructorInfo;
+  category?: {
+    _id: string;
+    name: string;
+  };
 }
