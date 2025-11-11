@@ -6,11 +6,15 @@
 export enum CollectionName {
   USERS = 'users',
   POST = 'posts',
+  CATEGORIES = 'categories',
   COURSES = 'courses',
   COURSE_SECTIONS = 'course_sections',
   LECTURES = 'lectures',
   QUIZZES = 'quizzes',
-  QUIZ_QUESTIONS = 'quiz_questions'
+  QUIZ_QUESTIONS = 'quiz_questions',
+  QUIZ_ATTEMPTS = 'quiz_attempts',
+  ENROLLMENTS = 'enrollments',
+  ORDERS = 'orders'
 }
 
 // Common Messages

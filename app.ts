@@ -10,11 +10,15 @@ import { connectDB, closeDB } from './config/database.js';
 
 // Import routes
 import authRoutes from './router/auth.js';
+import categoryRoutes from './router/category.js';
 import courseRoutes from './router/course.js';
 import courseSectionRoutes from './router/courseSection.js';
 import lectureRoutes from './router/lecture.js';
 import quizRoutes from './router/quiz.js';
 import quizQuestionRoutes from './router/quizQuestion.js';
+import quizAttemptRoutes from './router/quizAttempt.js';
+import enrollmentRoutes from './router/enrollment.js';
+import orderRoutes from './router/order.js';
 
 // Import middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -49,11 +53,15 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/course-sections', courseSectionRoutes);
 app.use('/api/lectures', lectureRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/quiz-questions', quizQuestionRoutes);
+app.use('/api/quiz-attempts', quizAttemptRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
+app.use('/api/orders', orderRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
