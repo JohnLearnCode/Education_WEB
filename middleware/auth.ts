@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, extractTokenFromHeader } from '../utils/jwt.js';
 import { ResponseHelper } from '../utils/response.js';
 import { StatusCodes } from 'http-status-codes';
-import '../types/express/index.js';
 
 /**
  * JWT Authentication Middleware
