@@ -244,7 +244,8 @@ export const getAllCourses = async (
     }
 
     if (level) {
-      filter.level = level;
+      // Case-insensitive level filter to handle data inconsistencies
+      filter.level = { $regex: new RegExp(`^${level}$`, 'i') };
     }
 
     if (search) {
@@ -253,6 +254,8 @@ export const getAllCourses = async (
         { description: { $regex: search, $options: 'i' } }
       ];
     }
+
+    console.log('🔍 Filter:', JSON.stringify(filter, null, 2));
 
     // Build sort
     const sort: any = {};

@@ -162,7 +162,9 @@ export const getAllCourses = async (
   next: NextFunction
 ) => {
   try {
+    console.log('📊 Query params:', req.query);
     const result = await courseService.getAllCourses(req.query);
+    console.log('📚 Found courses:', result.courses.length, 'Total:', result.total);
     
     return ResponseHelper.success(
       res,
