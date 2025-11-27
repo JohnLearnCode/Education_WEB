@@ -1,5 +1,6 @@
 import { BaseEntity } from '../common/interface.js';
 import { ObjectId } from 'mongodb';
+import { RatingDistribution } from '../courseReview/request.js';
 
 /**
  * Course Request Types - Input Data
@@ -15,6 +16,7 @@ export interface Course extends BaseEntity {
   level: string;
   rating: number;
   ratingCount: number;
+  ratingDistribution: RatingDistribution;  // Phân bố rating 1-5 sao
   imageUrl: string;
   slug: string;
   totalDuration: string;
@@ -62,7 +64,6 @@ export interface CourseQueryParams {
 // Instructor Info for Course Response
 export interface InstructorInfo {
   _id: string;
-  username: string;
   name: string;
   email: string;
   avatarUrl?: string;

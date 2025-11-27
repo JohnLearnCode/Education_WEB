@@ -52,4 +52,11 @@ router.get(
   quizAttemptController.getAttemptsByQuizId
 );
 
+router.get(
+  '/course/:courseId/all-attempts',
+  authenticateToken,
+  requireInstructor,
+  quizAttemptController.getAttemptsByCourseId
+);
+
 export default router;

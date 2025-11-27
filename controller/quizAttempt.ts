@@ -231,3 +231,35 @@ export const getAttemptsByQuizId = async (
     next(error);
   }
 };
+
+/**
+ * Get all attempts for a course (instructor only)
+ */
+export const getAttemptsByCourseId = async (
+  req: Request<{ courseId: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const instructorId = (req as any).user?.userId;
+    if (!instructorId) {
+      return ResponseHelper.error(
+        res,
+        'Unauthorized',
+        StatusCodes.UNAUTHORIZED.toString()
+      );
+    }
+
+    const { courseId } = req.params;
+    const attempts = await quizAttemptService.getAttemptsByCourseId(courseId, instructorId);
+    
+    return ResponseHelper.success(
+      res,
+      QuizAttemptMessage.SUCCESS_GET,
+      attempts,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};

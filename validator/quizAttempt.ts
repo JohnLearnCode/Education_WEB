@@ -18,14 +18,13 @@ export const submitQuizAttemptSchema = Joi.object({
             'string.pattern.base': 'Question ID không hợp lệ',
             'any.required': 'Question ID là bắt buộc'
           }),
-        selectedAnswerIndex: Joi.number()
-          .integer()
-          .min(0)
+        selectedAnswerIds: Joi.array()
+          .items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/))
+          .min(1)
           .required()
           .messages({
-            'number.integer': 'Chỉ số câu trả lời phải là số nguyên',
-            'number.min': 'Chỉ số câu trả lời phải từ 0 trở lên',
-            'any.required': 'Câu trả lời là bắt buộc'
+            'array.min': 'Phải chọn ít nhất một đáp án',
+            'any.required': 'Danh sách đáp án được chọn là bắt buộc'
           })
       })
     )

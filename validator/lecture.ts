@@ -46,8 +46,10 @@ export const createLectureSchema = Joi.object({
   textContent: Joi.string()
     .optional()
     .allow('')
+    .max(100000)
     .messages({
-      'string.base': 'Nội dung text phải là chuỗi'
+      'string.base': 'Nội dung text phải là chuỗi',
+      'string.max': 'Nội dung text không được vượt quá 100,000 ký tự'
     }),
   attachmentUrl: Joi.string()
     .uri()
@@ -97,8 +99,10 @@ export const updateLectureSchema = Joi.object({
   textContent: Joi.string()
     .optional()
     .allow('')
+    .max(100000)
     .messages({
-      'string.base': 'Nội dung text phải là chuỗi'
+      'string.base': 'Nội dung text phải là chuỗi',
+      'string.max': 'Nội dung text không được vượt quá 100,000 ký tự'
     }),
   attachmentUrl: Joi.string()
     .uri()

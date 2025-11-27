@@ -21,9 +21,9 @@ export const errorHandler = (
 
   return ResponseHelper.error(
     res,
-    'Sever Error',
+    err.message || 'Có lỗi xảy ra',
     err.message,
-    StatusCodes.INTERNAL_SERVER_ERROR
+    StatusCodes.BAD_REQUEST
   );
 };
 

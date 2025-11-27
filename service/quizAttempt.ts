@@ -5,6 +5,16 @@ import * as quizQuestionModel from '../model/quizQuestion.js';
 import { QuizAttemptMessage } from '../types/quizAttempt/enums.js';
 
 /**
+ * Check if two arrays have the same elements (order doesn't matter)
+ */
+const arraysEqual = (arr1: string[], arr2: string[]): boolean => {
+  if (arr1.length !== arr2.length) return false;
+  const sorted1 = [...arr1].sort();
+  const sorted2 = [...arr2].sort();
+  return sorted1.every((val, idx) => val === sorted2[idx]);
+};
+
+/**
  * Submit quiz attempt and calculate score
  */
 export const submitQuizAttempt = async (
@@ -45,12 +55,34 @@ export const submitQuizAttempt = async (
   let correctAnswers = 0;
   const totalQuestions = questions.length;
 
+  console.log('\n🔍 DEBUG: Quiz Attempt Scoring');
+  console.log('================================');
+
   for (const answer of attemptData.answers) {
     const question = questionMap.get(answer.questionId);
-    if (question && question.correctAnswerIndex === answer.selectedAnswerIndex) {
-      correctAnswers++;
+    if (question) {
+      // Get correct answer IDs as strings
+      const correctAnswerIds = question.correctAnswerIds.map((id: any) => id.toString());
+      
+      console.log(`\n📝 Question: ${question.questionText.substring(0, 50)}...`);
+      console.log(`   Selected IDs: [${answer.selectedAnswerIds.join(', ')}]`);
+      console.log(`   Correct IDs:  [${correctAnswerIds.join(', ')}]`);
+      
+      // Check if selected answers match correct answers exactly
+      const isCorrect = arraysEqual(answer.selectedAnswerIds, correctAnswerIds);
+      console.log(`   Match: ${isCorrect ? '✅ CORRECT' : '❌ WRONG'}`);
+      
+      if (isCorrect) {
+        correctAnswers++;
+      }
+    } else {
+      console.log(`\n⚠️ Question not found for ID: ${answer.questionId}`);
     }
   }
+
+  console.log('\n================================');
+  console.log(`📊 Total Correct: ${correctAnswers}/${totalQuestions}`);
+  console.log('================================\n');
 
   // Calculate percentage score
   const score = Math.round((correctAnswers / totalQuestions) * 100);
@@ -258,4 +290,44 @@ export const getAttemptsByUserAndCourse = async (
  */
 export const deleteAttemptsByQuizId = async (quizId: string): Promise<boolean> => {
   return await quizAttemptModel.deleteAttemptsByQuizId(quizId);
+};
+
+/**
+ * Get all attempts for a course (for instructors)
+ */
+export const getAttemptsByCourseId = async (
+  courseId: string,
+  instructorId: string
+): Promise<any[]> => {
+  // Verify instructor ownership through course
+  const courseService = await import('./course.js');
+  const hasAccess = await courseService.verifyCourseInstructor(courseId, instructorId);
+  if (!hasAccess) {
+    throw new Error('Bạn không có quyền xem thống kê quiz của khóa học này');
+  }
+
+  const attempts = await quizAttemptModel.getAttemptsByCourseId(courseId);
+
+  // Convert ObjectId to string for each attempt and include user info
+  const responseAttempts = attempts.map(attempt => ({
+    _id: attempt._id?.toString(),
+    userId: attempt.userId?.toString(),
+    courseId: attempt.courseId?.toString(),
+    lectureId: attempt.lectureId?.toString(),
+    quizId: attempt.quizId?.toString(),
+    answers: attempt.answers,
+    score: attempt.score,
+    totalQuestions: attempt.totalQuestions,
+    correctAnswers: attempt.correctAnswers,
+    passed: attempt.passed,
+    attemptedAt: attempt.attemptedAt,
+    user: attempt.user ? {
+      _id: attempt.user._id?.toString(),
+      name: attempt.user.name,
+      email: attempt.user.email,
+      avatarUrl: attempt.user.avatarUrl
+    } : undefined
+  }));
+
+  return responseAttempts;
 };

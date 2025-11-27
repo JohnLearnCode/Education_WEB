@@ -44,7 +44,6 @@ export interface OrderResponse extends Omit<Order, 'userId'> {
 export interface OrderWithUser extends OrderResponse {
   user?: {
     _id: string;
-    username: string;
     name: string;
     email: string;
   };

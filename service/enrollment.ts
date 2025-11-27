@@ -1,7 +1,9 @@
 import { EnrollmentResponse, ProgressSummary } from "../types/enrollment/request";
 import * as enrollmentModel from '../model/enrollment.js';
 import * as courseModel from '../model/course.js';
+import * as courseService from './course.js';
 import * as lectureModel from '../model/lecture.js';
+import * as userModel from '../model/user.js';
 import { EnrollmentMessage } from '../types/enrollment/enums.js';
 
 /**
@@ -32,6 +34,9 @@ export const enrollCourse = async (
   if (!enrollment) {
     throw new Error(EnrollmentMessage.FAIL_ENROLL);
   }
+
+  // Add courseId to user's enrolledCourseIds
+  await userModel.addEnrolledCourse(userId, courseId);
 
   // Convert ObjectId to string for response
   const response: EnrollmentResponse = {
@@ -85,6 +90,55 @@ export const getEnrollmentsByUserId = async (userId: string): Promise<Enrollment
   }));
 
   return responseEnrollments;
+};
+
+/**
+ * Get all enrolled courses with course details by user
+ */
+export const getEnrolledCoursesWithDetails = async (userId: string): Promise<any[]> => {
+  const enrollments = await enrollmentModel.getEnrollmentsByUserId(userId);
+
+  // Get course details for each enrollment
+  const enrolledCoursesWithDetails = await Promise.all(
+    enrollments.map(async (enrollment) => {
+      try {
+        // Use courseService to get full course details with instructor info
+        const course = await courseService.getCourseById(enrollment.courseId.toString());
+        
+        return {
+          enrollmentId: enrollment._id?.toString(),
+          courseId: enrollment.courseId.toString(),
+          progress: enrollment.progress,
+          enrolledAt: enrollment.enrolledAt,
+          lastAccessedAt: enrollment.lastAccessedAt,
+          completedAt: enrollment.completedAt,
+          completedLectures: enrollment.completedLectures,
+          course: {
+            _id: course._id?.toString(),
+            title: course.title,
+            description: course.description,
+            imageUrl: course.imageUrl,
+            price: course.price,
+            level: course.level,
+            rating: course.rating,
+            ratingCount: course.ratingCount,
+            studentCount: course.studentCount,
+            totalDuration: course.totalDuration,
+            lectureCount: course.lectureCount,
+            instructor: course.instructor,
+            slug: course.slug
+          }
+        };
+      } catch (error) {
+        // If course not found, return null
+        console.error('Error fetching course details:', error);
+        return null;
+      }
+    })
+  );
+
+  // Filter out null values (courses that were not found)
+  return enrolledCoursesWithDetails.filter(item => item !== null);
 };
 
 /**

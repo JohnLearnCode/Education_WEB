@@ -4,9 +4,9 @@ import { validateBody } from '../middleware/validation.js';
 import { authenticateToken, requireInstructor } from '../middleware/auth.js';
 import {
   createQuizQuestionSchema,
-  updateQuizQuestionSchema,
-  reorderQuestionsSchema
+  updateQuizQuestionSchema
 } from '../validator/quizQuestion.js';
+import { uploadSingleSpreadsheet } from '../middleware/uploadMiddleware.js';
 
 const router: Router = Router();
 
@@ -16,9 +16,16 @@ router.get(
   quizQuestionController.getQuizQuestionById
 );
 
+// Get questions for instructor (with correct answers)
 router.get(
   '/quiz/:quizId/questions',
   quizQuestionController.getQuestionsByQuizId
+);
+
+// Get questions for student (without correct answers)
+router.get(
+  '/quiz/:quizId/questions/student',
+  quizQuestionController.getQuestionsByQuizIdForStudent
 );
 
 // Instructor routes (protected)
@@ -45,19 +52,36 @@ router.delete(
   quizQuestionController.deleteQuizQuestion
 );
 
+// Import questions from CSV/XLSX file
 router.post(
-  '/reorder',
+  '/quiz/:quizId/import',
   authenticateToken,
   requireInstructor,
-  validateBody(reorderQuestionsSchema),
-  quizQuestionController.reorderQuestions
+  uploadSingleSpreadsheet('file'),
+  quizQuestionController.importQuestions
 );
 
+// Download import template
 router.get(
-  '/quiz/:quizId/next-order',
+  '/import-template',
+  quizQuestionController.downloadImportTemplate
+);
+
+// Preview import (parse file without saving)
+router.post(
+  '/preview-import',
   authenticateToken,
   requireInstructor,
-  quizQuestionController.getNextOrderNumber
+  uploadSingleSpreadsheet('file'),
+  quizQuestionController.previewImport
+);
+
+// Export questions to XLSX
+router.get(
+  '/quiz/:quizId/export',
+  authenticateToken,
+  requireInstructor,
+  quizQuestionController.exportQuestions
 );
 
 export default router;

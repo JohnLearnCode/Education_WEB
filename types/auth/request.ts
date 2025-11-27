@@ -7,7 +7,6 @@ import { ObjectId } from 'mongodb';
 
 // User Entity Interface
 export interface User extends BaseEntity {
-  username: string;
   email: string;
   password: string;
   name: string;
@@ -15,6 +14,7 @@ export interface User extends BaseEntity {
   phoneNumber?: string;
   avatarUrl?: string;
   isInstructor: boolean;
+  isAdmin: boolean;
   enrolledCourseIds: ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -22,7 +22,6 @@ export interface User extends BaseEntity {
 
 // Create User Request
 export interface RegisterUserRequest {
-  username: string;
   password: string;
   email: string;
   name: string;
@@ -30,6 +29,7 @@ export interface RegisterUserRequest {
   phoneNumber?: string;
   avatarUrl?: string;
   isInstructor?: boolean;
+  isAdmin?: boolean;
 }
 
 export interface LoginAuthRequest {

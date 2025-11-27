@@ -59,7 +59,7 @@ export const getQuizQuestionById = async (
 };
 
 /**
- * Get questions by quiz ID (public)
+ * Get questions by quiz ID (for instructor - with correct answers)
  */
 export const getQuestionsByQuizId = async (
   req: Request<{ quizId: string }>,
@@ -69,6 +69,29 @@ export const getQuestionsByQuizId = async (
   try {
     const { quizId } = req.params;
     const questions = await quizQuestionService.getQuestionsByQuizId(quizId);
+    
+    return ResponseHelper.success(
+      res,
+      QuizQuestionMessage.SUCCESS_GET,
+      questions,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get questions by quiz ID for student (without correct answers)
+ */
+export const getQuestionsByQuizIdForStudent = async (
+  req: Request<{ quizId: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { quizId } = req.params;
+    const questions = await quizQuestionService.getQuestionsByQuizIdForStudent(quizId);
     
     return ResponseHelper.success(
       res,
@@ -146,41 +169,9 @@ export const deleteQuizQuestion = async (
 };
 
 /**
- * Reorder questions (instructor only)
+ * Import quiz questions from CSV/XLSX file (instructor only)
  */
-export const reorderQuestions = async (
-  req: Request<{}, {}, { questions: { questionId: string; order: number }[] }>,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const instructorId = (req as any).user?.userId;
-    if (!instructorId) {
-      return ResponseHelper.error(
-        res,
-        'Unauthorized',
-        StatusCodes.UNAUTHORIZED.toString()
-      );
-    }
-
-    const { questions } = req.body;
-    await quizQuestionService.reorderQuestions(questions, instructorId);
-    
-    return ResponseHelper.success(
-      res,
-      QuizQuestionMessage.SUCCESS_REORDER,
-      { message: 'Questions reordered successfully' },
-      StatusCodes.OK
-    );
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Get next order number for a quiz (instructor only)
- */
-export const getNextOrderNumber = async (
+export const importQuestions = async (
   req: Request<{ quizId: string }>,
   res: Response,
   next: NextFunction
@@ -196,15 +187,152 @@ export const getNextOrderNumber = async (
     }
 
     const { quizId } = req.params;
-    const nextOrder = await quizQuestionService.getNextOrderNumber(quizId, instructorId);
-    
+    const file = req.file;
+
+    if (!file) {
+      return ResponseHelper.error(
+        res,
+        'Vui lòng upload file CSV hoặc XLSX',
+        StatusCodes.BAD_REQUEST.toString()
+      );
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
+
+    if (!allowedTypes.includes(file.mimetype) && !allowedExtensions.includes(fileExtension)) {
+      return ResponseHelper.error(
+        res,
+        'Chỉ chấp nhận file CSV hoặc XLSX',
+        StatusCodes.BAD_REQUEST.toString()
+      );
+    }
+
+    const result = await quizQuestionService.importQuestionsFromFile(
+      quizId,
+      instructorId,
+      file.buffer,
+      file.originalname
+    );
+
     return ResponseHelper.success(
       res,
-      'Get next order number successfully',
-      { nextOrder },
+      `Import thành công ${result.success} câu hỏi${result.failed > 0 ? `, ${result.failed} câu thất bại` : ''}`,
+      result,
       StatusCodes.OK
     );
   } catch (error) {
     next(error);
   }
 };
+
+/**
+ * Download import template (instructor only)
+ */
+export const downloadImportTemplate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const templateBuffer = quizQuestionService.generateImportTemplate();
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=quiz_questions_template.xlsx');
+    res.send(templateBuffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Preview import questions from CSV/XLSX file (instructor only)
+ */
+export const previewImport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const instructorId = (req as any).user?.userId;
+    if (!instructorId) {
+      return ResponseHelper.error(
+        res,
+        'Unauthorized',
+        StatusCodes.UNAUTHORIZED.toString()
+      );
+    }
+
+    const file = req.file;
+
+    if (!file) {
+      return ResponseHelper.error(
+        res,
+        'Vui lòng upload file CSV hoặc XLSX',
+        StatusCodes.BAD_REQUEST.toString()
+      );
+    }
+
+    // Validate file type
+    const allowedExtensions = ['.csv', '.xlsx', '.xls'];
+    const fileExtension = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
+
+    if (!allowedExtensions.includes(fileExtension)) {
+      return ResponseHelper.error(
+        res,
+        'Chỉ chấp nhận file CSV hoặc XLSX',
+        StatusCodes.BAD_REQUEST.toString()
+      );
+    }
+
+    const result = await quizQuestionService.previewQuestionsFromFile(
+      file.buffer,
+      file.originalname
+    );
+
+    return ResponseHelper.success(
+      res,
+      `Đọc được ${result.questions.length} câu hỏi${result.errors.length > 0 ? `, ${result.errors.length} lỗi` : ''}`,
+      result,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Export quiz questions to XLSX file (instructor only)
+ */
+export const exportQuestions = async (
+  req: Request<{ quizId: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const instructorId = (req as any).user?.userId;
+    if (!instructorId) {
+      return ResponseHelper.error(
+        res,
+        'Unauthorized',
+        StatusCodes.UNAUTHORIZED.toString()
+      );
+    }
+
+    const { quizId } = req.params;
+    const fileBuffer = await quizQuestionService.exportQuestionsToFile(quizId);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=quiz_questions_${quizId}.xlsx`);
+    res.send(fileBuffer);
+  } catch (error) {
+    next(error);
+  }
+};
+

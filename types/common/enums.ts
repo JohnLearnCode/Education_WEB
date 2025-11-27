@@ -13,8 +13,20 @@ export enum CollectionName {
   QUIZZES = 'quizzes',
   QUIZ_QUESTIONS = 'quiz_questions',
   QUIZ_ATTEMPTS = 'quiz_attempts',
+  ANSWERS = 'answers',
   ENROLLMENTS = 'enrollments',
-  ORDERS = 'orders'
+  ORDERS = 'orders',
+  COURSE_REVIEWS = 'course_reviews',
+  CARTS = 'carts',
+  INSTRUCTOR_EARNINGS = 'instructor_earnings',
+  WISHLISTS = 'wishlists',
+  COMPLAINTS = 'complaints'
+}
+
+// Quiz Type Enum
+export enum QuizType {
+  MULTIPLE_CHOICE = 'multiple_choice',
+  FILL_BLANK = 'fill_blank'
 }
 
 // Common Messages

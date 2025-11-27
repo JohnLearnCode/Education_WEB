@@ -1,0 +1,676 @@
+paths:
+  # ==================== AUTH APIs ====================
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Đăng ký tài khoản mới
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+                name:
+                  type: string
+                  example: "Nguyễn Văn A"
+                phoneNumber:
+                  type: string
+                  example: "0123456789"
+                isInstructor:
+                  type: boolean
+                  example: false
+      responses:
+        201:
+          description: Đăng ký thành công
+        400:
+          description: Validation error
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Đăng nhập
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        200:
+          description: Đăng nhập thành công
+        401:
+          description: Sai email hoặc mật khẩu
+
+  /api/auth/profile:
+    get:
+      tags:
+        - Auth
+      summary: Xem profile của mình
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+        401:
+          description: Unauthorized
+
+  # ==================== CART APIs ====================
+  /api/cart/my:
+    get:
+      tags:
+        - Cart
+      summary: Xem giỏ hàng của mình
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+
+  /api/cart/add:
+    post:
+      tags:
+        - Cart
+      summary: Thêm khóa học vào giỏ hàng
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+                  example: "673d5f8e9b1c2a3d4e5f6789"
+      responses:
+        200:
+          description: Thêm thành công
+        400:
+          description: Khóa học đã có trong giỏ
+
+  /api/cart/remove:
+    post:
+      tags:
+        - Cart
+      summary: Xóa khóa học khỏi giỏ hàng
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+      responses:
+        200:
+          description: Xóa thành công
+
+  # ==================== WISHLIST APIs ====================
+  /api/wishlist/my:
+    get:
+      tags:
+        - Wishlist
+      summary: Xem danh sách yêu thích
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+
+  /api/wishlist/add:
+    post:
+      tags:
+        - Wishlist
+      summary: Thêm khóa học vào wishlist
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+      responses:
+        200:
+          description: Success
+
+  /api/wishlist/remove:
+    post:
+      tags:
+        - Wishlist
+      summary: Xóa khóa học khỏi wishlist
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+      responses:
+        200:
+          description: Success
+
+  /api/wishlist/move-to-cart:
+    post:
+      tags:
+        - Wishlist
+      summary: Chuyển khóa học từ wishlist sang cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+      responses:
+        200:
+          description: Success
+
+  # ==================== COURSE APIs ====================
+  /api/courses/all:
+    get:
+      tags:
+        - Courses
+      summary: Lấy danh sách tất cả khóa học (public)
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: level
+          schema:
+            type: string
+            enum: [beginner, intermediate, advanced]
+      responses:
+        200:
+          description: Success
+
+  /api/courses/{id}:
+    get:
+      tags:
+        - Courses
+      summary: Xem chi tiết khóa học
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+        404:
+          description: Không tìm thấy khóa học
+
+  /api/courses:
+    post:
+      tags:
+        - Courses
+      summary: Tạo khóa học mới (instructor only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - price
+                - categoryId
+                - level
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                categoryId:
+                  type: string
+                level:
+                  type: string
+                  enum: [beginner, intermediate, advanced]
+                imageUrl:
+                  type: string
+      responses:
+        201:
+          description: Tạo thành công
+
+  # ==================== COURSE REVIEWS APIs ====================
+  /api/course-reviews/course/{courseId}:
+    get:
+      tags:
+        - Course Reviews
+      summary: Lấy danh sách đánh giá của khóa học
+      parameters:
+        - in: path
+          name: courseId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Success
+
+  /api/course-reviews:
+    post:
+      tags:
+        - Course Reviews
+      summary: Tạo đánh giá khóa học
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - rating
+                - comment
+              properties:
+                courseId:
+                  type: string
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        201:
+          description: Success
+
+  # ==================== INSTRUCTOR EARNINGS APIs ====================
+  /api/instructor-earnings/my/summary:
+    get:
+      tags:
+        - Instructor Earnings
+      summary: Xem tổng hợp thu nhập (instructor only)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalEarnings:
+                    type: number
+                  totalPlatformFee:
+                    type: number
+                  totalNetEarning:
+                    type: number
+                  pendingEarnings:
+                    type: number
+                  paidEarnings:
+                    type: number
+
+  /api/instructor-earnings/my/earnings:
+    get:
+      tags:
+        - Instructor Earnings
+      summary: Xem danh sách thu nhập (instructor only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, processing, paid, cancelled]
+      responses:
+        200:
+          description: Success
+
+  # ==================== USER APIs ====================
+  /api/users/profile:
+    get:
+      tags:
+        - Users
+      summary: Xem profile của mình
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+    put:
+      tags:
+        - Users
+      summary: Cập nhật profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                avatarUrl:
+                  type: string
+                phoneNumber:
+                  type: string
+      responses:
+        200:
+          description: Success
+
+  /api/users/all:
+    get:
+      tags:
+        - Users
+      summary: Lấy danh sách users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: isInstructor
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Success
+
+  /api/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Xem profile công khai của user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+
+  # ==================== ENROLLMENTS APIs ====================
+  /api/enrollments/my:
+    get:
+      tags:
+        - Enrollments
+      summary: Xem danh sách khóa học đã đăng ký
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Success
+
+  /api/enrollments:
+    post:
+      tags:
+        - Enrollments
+      summary: Đăng ký khóa học
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+              properties:
+                courseId:
+                  type: string
+                  example: "673d5f8e9b1c2a3d4e5f6789"
+      responses:
+        201:
+          description: Đăng ký thành công
+        400:
+          description: Đã đăng ký khóa học này rồi
+
+  /api/enrollments/{id}:
+    get:
+      tags:
+        - Enrollments
+      summary: Xem chi tiết enrollment
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+
+  /api/enrollments/{id}/progress:
+    put:
+      tags:
+        - Enrollments
+      summary: Cập nhật tiến độ học
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lectureId
+              properties:
+                lectureId:
+                  type: string
+                completed:
+                  type: boolean
+      responses:
+        200:
+          description: Success
+
+  # ==================== ORDERS APIs ====================
+  /api/orders/my:
+    get:
+      tags:
+        - Orders
+      summary: Xem danh sách đơn hàng của mình
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, completed, cancelled]
+      responses:
+        200:
+          description: Success
+
+  /api/orders:
+    post:
+      tags:
+        - Orders
+      summary: Tạo đơn hàng mới
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseIds
+                - totalAmount
+              properties:
+                courseIds:
+                  type: array
+                  items:
+                    type: string
+                  example: ["673d5f8e9b1c2a3d4e5f6789"]
+                totalAmount:
+                  type: number
+                  example: 1000000
+                paymentMethod:
+                  type: string
+                  enum: [credit_card, bank_transfer, momo, vnpay]
+                  example: "credit_card"
+      responses:
+        201:
+          description: Tạo đơn hàng thành công
+        400:
+          description: Validation error
+
+  /api/orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Xem chi tiết đơn hàng
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+        404:
+          description: Không tìm thấy đơn hàng
+
+  /api/orders/{id}/status:
+    put:
+      tags:
+        - Orders
+      summary: Cập nhật trạng thái đơn hàng
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, completed, cancelled]
+      responses:
+        200:
+          description: Success

@@ -174,3 +174,26 @@ export const getAllCourses = async (
     next(error);
   }
 };
+
+/**
+ * Get course curriculum (sections with lectures) - public
+ */
+export const getCourseCurriculum = async (
+  req: Request<{ id: string }>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const curriculum = await courseService.getCourseCurriculum(id);
+    
+    return ResponseHelper.success(
+      res,
+      'Lấy nội dung khóa học thành công',
+      curriculum,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};

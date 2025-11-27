@@ -14,16 +14,16 @@ const getRefreshTokenSecret = (): string => {
 export interface JwtPayload {
   userId: string;
   email: string;
-  username: string;
   isInstructor: boolean;
+  isAdmin: boolean;
 }
 
 export const generateAccessToken = (user: User): string => {
   const payload: JwtPayload = {
     userId: user._id?.toString() || '',
     email: user.email,
-    username: user.username,
-    isInstructor: user.isInstructor
+    isInstructor: user.isInstructor,
+    isAdmin: user.isAdmin
   };
   return jwt.sign(payload, getAccessTokenSecret(), { expiresIn: '10h' })
 }
@@ -32,8 +32,8 @@ export const generateRefreshToken = (user: User): string => {
   const payload: JwtPayload = {
     userId: user._id?.toString() || '',
     email: user.email,
-    username: user.username,
-    isInstructor: user.isInstructor
+    isInstructor: user.isInstructor,
+    isAdmin: user.isAdmin
   };
   return jwt.sign(payload, getRefreshTokenSecret(), { expiresIn: '7d' })
 }

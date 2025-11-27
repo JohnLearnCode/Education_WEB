@@ -31,6 +31,7 @@ export const createCourse = async (courseData: CreateCourseRequest, instructorId
       level: courseData.level,
       rating: 0,
       ratingCount: 0,
+      ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       imageUrl: courseData.imageUrl || '',
       slug: generateSlug(courseData.title) + '-' + Date.now(), // Ensure unique slug
       totalDuration: courseData.totalDuration || '0 hours',
@@ -88,7 +89,10 @@ export const getCoursesByInstructorId = async (
       sortOrder = 'desc'
     } = queryParams;
 
-    const skip = (page - 1) * limit;
+    // Convert to integers (query params come as strings)
+    const pageNum = parseInt(String(page), 10) || 1;
+    const limitNum = parseInt(String(limit), 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
     
     // Build filter
     const filter: any = {
@@ -122,7 +126,7 @@ export const getCoursesByInstructorId = async (
       .find(filter)
       .sort(sort)
       .skip(skip)
-      .limit(limit)
+      .limit(limitNum)
       .toArray();
 
     return { courses, total };
@@ -227,7 +231,10 @@ export const getAllCourses = async (
       sortOrder = 'desc'
     } = queryParams;
 
-    const skip = (page - 1) * limit;
+    // Convert to integers (query params come as strings)
+    const pageNum = parseInt(String(page), 10) || 1;
+    const limitNum = parseInt(String(limit), 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
     
     // Build filter
     const filter: any = {};
@@ -259,12 +266,44 @@ export const getAllCourses = async (
       .find(filter)
       .sort(sort)
       .skip(skip)
-      .limit(limit)
+      .limit(limitNum)
       .toArray();
 
     return { courses, total };
   } catch (error) {
     console.error('Lỗi get all courses:', error);
     return { courses: [], total: 0 };
+  }
+};
+
+/**
+ * Update course rating statistics
+ * Called when a review is created, updated, or deleted
+ */
+export const updateCourseRating = async (
+  courseId: string,
+  rating: number,
+  ratingCount: number,
+  ratingDistribution: { 1: number; 2: number; 3: number; 4: number; 5: number }
+): Promise<boolean> => {
+  try {
+    const collection = getCollection<Course>(CollectionName.COURSES);
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(courseId) },
+      {
+        $set: {
+          rating,
+          ratingCount,
+          ratingDistribution,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    return result.modifiedCount > 0;
+  } catch (error) {
+    console.error('Lỗi update course rating:', error);
+    return false;
   }
 };

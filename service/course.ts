@@ -3,6 +3,8 @@ import * as courseModel from '../model/course.js';
 import * as authModel from '../model/auth.js';
 import * as categoryModel from '../model/category.js';
 import * as categoryService from './category.js';
+import * as courseSectionModel from '../model/courseSection.js';
+import * as lectureModel from '../model/lecture.js';
 import { CourseMessage } from '../types/course/enums.js';
 import { CategoryMessage } from '../types/category/enums.js';
 
@@ -15,7 +17,6 @@ const getInstructorInfo = async (instructorId: string): Promise<InstructorInfo |
 
   return {
     _id: user._id?.toString() || '',
-    username: user.username,
     name: user.name,
     email: user.email,
     avatarUrl: user.avatarUrl
@@ -33,7 +34,7 @@ export const createCourse = async (courseData: CreateCourseRequest, instructorId
   }
 
   const course = await courseModel.createCourse(courseData, instructorId);
-  
+
   if (!course) {
     throw new Error(CourseMessage.FAIL_CREATE);
   }
@@ -64,7 +65,7 @@ export const createCourse = async (courseData: CreateCourseRequest, instructorId
  */
 export const getCourseById = async (courseId: string): Promise<CourseResponse> => {
   const course = await courseModel.getCourseById(courseId);
-  
+
   if (!course) {
     throw new Error(CourseMessage.COURSE_NOT_FOUND);
   }
@@ -98,9 +99,10 @@ export const getCoursesByInstructorId = async (
   queryParams: CourseQueryParams = {}
 ): Promise<{ courses: CourseResponse[], total: number, page: number, totalPages: number }> => {
   const { courses, total } = await courseModel.getCoursesByInstructorId(instructorId, queryParams);
-  
-  const page = queryParams.page || 1;
-  const limit = queryParams.limit || 10;
+
+  // Convert to integers (query params come as strings)
+  const page = parseInt(String(queryParams.page || 1), 10);
+  const limit = parseInt(String(queryParams.limit || 10), 10);
   const totalPages = Math.ceil(total / limit);
 
   // Get instructor info
@@ -131,7 +133,7 @@ export const updateCourse = async (
   updateData: UpdateCourseRequest
 ): Promise<CourseResponse> => {
   const course = await courseModel.updateCourse(courseId, instructorId, updateData);
-  
+
   if (!course) {
     throw new Error(CourseMessage.FAIL_UPDATE);
   }
@@ -168,7 +170,7 @@ export const deleteCourse = async (courseId: string, instructorId: string): Prom
   }
 
   const success = await courseModel.deleteCourse(courseId, instructorId);
-  
+
   if (!success) {
     throw new Error(CourseMessage.FAIL_DELETE);
   }
@@ -186,9 +188,10 @@ export const getAllCourses = async (
   queryParams: CourseQueryParams = {}
 ): Promise<{ courses: CourseResponse[], total: number, page: number, totalPages: number }> => {
   const { courses, total } = await courseModel.getAllCourses(queryParams);
-  
-  const page = queryParams.page || 1;
-  const limit = queryParams.limit || 10;
+
+  // Convert to integers (query params come as strings)
+  const page = parseInt(String(queryParams.page || 1), 10);
+  const limit = parseInt(String(queryParams.limit || 10), 10);
   const totalPages = Math.ceil(total / limit);
 
   // Convert ObjectId to string for each course and add instructor info
@@ -217,10 +220,56 @@ export const getAllCourses = async (
  */
 export const verifyCourseInstructor = async (courseId: string, instructorId: string): Promise<boolean> => {
   const course = await courseModel.getCourseById(courseId);
-  
+
   if (!course) {
     return false;
   }
 
   return course.instructorId.toString() === instructorId;
+};
+
+/**
+ * Get course curriculum (sections with lectures)
+ */
+export const getCourseCurriculum = async (courseId: string): Promise<any[]> => {
+  // Verify course exists
+  const course = await courseModel.getCourseById(courseId);
+  if (!course) {
+    throw new Error(CourseMessage.COURSE_NOT_FOUND);
+  }
+
+  // Get all sections for the course
+  const sections = await courseSectionModel.getSectionsByCourseId(courseId);
+
+  // For each section, get its lectures
+  const curriculum = await Promise.all(
+    sections.map(async (section) => {
+      const lectures = await lectureModel.getLecturesBySectionId(section._id!.toString());
+      
+      return {
+        _id: section._id?.toString(),
+        courseId: section.courseId.toString(),
+        title: section.title,
+        order: section.order,
+        createdAt: section.createdAt,
+        updatedAt: section.updatedAt,
+        lectures: lectures.map(lecture => ({
+          _id: lecture._id?.toString(),
+          sectionId: lecture.sectionId.toString(),
+          courseId: lecture.courseId.toString(),
+          title: lecture.title,
+          duration: lecture.duration,
+          type: lecture.type,
+          videoUrl: lecture.videoUrl,
+          textContent: lecture.textContent,
+          attachmentUrl: lecture.attachmentUrl,
+          order: lecture.order,
+          createdAt: lecture.createdAt,
+          updatedAt: lecture.updatedAt
+        }))
+      };
+    })
+  );
+
+  return curriculum;
 };

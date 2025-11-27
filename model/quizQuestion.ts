@@ -1,21 +1,37 @@
 import { getCollection } from "../config/database";
-import { CreateQuizQuestionRequest, UpdateQuizQuestionRequest, QuizQuestion } from "../types/quizQuestion/request";
+import { CreateQuizQuestionRequest, UpdateQuizQuestionRequest, QuizQuestion, QuizQuestionResponse } from "../types/quizQuestion/request";
 import { CollectionName } from "../types/common/enums";
 import { ObjectId } from "mongodb";
+import * as answerModel from "./answer";
+import { Answer } from "../types/answer/request";
 
 /**
- * Create a new quiz question
+ * Create a new quiz question with answers
  */
 export const createQuizQuestion = async (questionData: CreateQuizQuestionRequest): Promise<QuizQuestion | null> => {
   try {
     const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
 
+    // Tạo answers trước
+    const createdAnswers = await answerModel.bulkCreateAnswers(questionData.answers);
+    
+    if (createdAnswers.length === 0) {
+      console.error('Không thể tạo answers');
+      return null;
+    }
+
+    // Map correctAnswerIndices sang correctAnswerIds
+    const answerIds = createdAnswers.map(a => a._id);
+    const correctAnswerIds = questionData.correctAnswerIndices.map(index => answerIds[index]);
+
     const newQuestion = {
       quizId: new ObjectId(questionData.quizId),
       questionText: questionData.questionText,
-      options: questionData.options,
-      correctAnswerIndex: questionData.correctAnswerIndex,
-      order: questionData.order,
+      imageUrl: questionData.imageUrl,
+      answerIds: answerIds,
+      correctAnswerIds: correctAnswerIds,
+      requiredAnswers: correctAnswerIds.length, // Tự động = số đáp án đúng
+      type: questionData.type,
       createdAt: new Date()
     };
 
@@ -55,10 +71,40 @@ export const getQuestionsByQuizId = async (quizId: string): Promise<QuizQuestion
     const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
     return await collection
       .find({ quizId: new ObjectId(quizId) })
-      .sort({ order: 1 })
       .toArray();
   } catch (error) {
     console.error('Lỗi get questions by quiz id:', error);
+    return [];
+  }
+};
+
+/**
+ * Get questions by quiz ID with populated answers (for instructor)
+ */
+export const getQuestionsByQuizIdWithAnswers = async (quizId: string): Promise<QuizQuestionResponse[]> => {
+  try {
+    const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
+    const questions = await collection
+      .find({ quizId: new ObjectId(quizId) })
+      .toArray();
+
+    // Populate answers for each question
+    const questionsWithAnswers = await Promise.all(
+      questions.map(async (q) => {
+        const answerIds = q.answerIds.map(id => id.toString());
+        const answers = await answerModel.getAnswersByIds(answerIds);
+        return {
+          ...q,
+          quizId: q.quizId.toString(),
+          answers: answers,
+          correctAnswerIds: q.correctAnswerIds.map(id => id.toString())
+        } as QuizQuestionResponse;
+      })
+    );
+
+    return questionsWithAnswers;
+  } catch (error) {
+    console.error('Lỗi get questions with answers:', error);
     return [];
   }
 };
@@ -73,9 +119,18 @@ export const updateQuizQuestion = async (
   try {
     const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
 
+    // Convert string IDs to ObjectIds
+    const updateFields: any = { ...updateData };
+    if (updateData.answerIds) {
+      updateFields.answerIds = updateData.answerIds.map(id => new ObjectId(id));
+    }
+    if (updateData.correctAnswerIds) {
+      updateFields.correctAnswerIds = updateData.correctAnswerIds.map(id => new ObjectId(id));
+    }
+
     const result = await collection.updateOne(
       { _id: new ObjectId(questionId) },
-      { $set: updateData }
+      { $set: updateFields }
     );
 
     if (result.modifiedCount > 0) {
@@ -126,43 +181,25 @@ export const deleteQuestionsByQuizId = async (quizId: string): Promise<boolean> 
 };
 
 /**
- * Reorder questions (update order of multiple questions)
+ * Delete question with its answers
  */
-export const reorderQuestions = async (questionOrders: { questionId: string; order: number }[]): Promise<boolean> => {
-  try {
-    const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
-
-    const bulkOps = questionOrders.map(({ questionId, order }) => ({
-      updateOne: {
-        filter: { _id: new ObjectId(questionId) },
-        update: { $set: { order } }
-      }
-    }));
-
-    const result = await collection.bulkWrite(bulkOps);
-    return result.modifiedCount > 0;
-  } catch (error) {
-    console.error('Lỗi reorder questions:', error);
-    return false;
-  }
-};
-
-/**
- * Get next order number for a quiz
- */
-export const getNextOrderNumber = async (quizId: string): Promise<number> => {
+export const deleteQuizQuestionWithAnswers = async (questionId: string): Promise<boolean> => {
   try {
     const collection = getCollection<QuizQuestion>(CollectionName.QUIZ_QUESTIONS);
     
-    const lastQuestion = await collection
-      .find({ quizId: new ObjectId(quizId) })
-      .sort({ order: -1 })
-      .limit(1)
-      .toArray();
+    // Get question first to get answer IDs
+    const question = await collection.findOne({ _id: new ObjectId(questionId) });
+    if (!question) return false;
 
-    return lastQuestion.length > 0 ? lastQuestion[0].order + 1 : 1;
+    // Delete associated answers
+    const answerIds = question.answerIds.map(id => id.toString());
+    await answerModel.deleteAnswersByIds(answerIds);
+
+    // Delete question
+    const result = await collection.deleteOne({ _id: new ObjectId(questionId) });
+    return result.deletedCount > 0;
   } catch (error) {
-    console.error('Lỗi get next order number:', error);
-    return 1;
+    console.error('Lỗi delete question with answers:', error);
+    return false;
   }
 };

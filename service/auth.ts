@@ -9,10 +9,12 @@ export const registerAuth = async (authData: RegisterUserRequest): Promise<AuthR
     throw new Error('Email đã được sử dụng');
   }
 
-  // Check if username already exists
-  const existingUserByUsername = await authModel.findUserByUsername(authData.username);
-  if (existingUserByUsername) {
-    throw new Error('Username đã được sử dụng');
+  // Check if phone number already exists
+  if (authData.phoneNumber) {
+    const existingUserByPhone = await authModel.findUserByPhoneNumber(authData.phoneNumber);
+    if (existingUserByPhone) {
+      throw new Error('Số điện thoại đã được sử dụng');
+    }
   }
 
   const registerUser = await authModel.registerAuth(authData);
@@ -27,7 +29,7 @@ export const registerAuth = async (authData: RegisterUserRequest): Promise<AuthR
 
   // Return user without password
   const { password, ...userWithoutPassword } = registerUser;
-  
+
   return {
     user: userWithoutPassword as User,
     token: accessToken
@@ -36,9 +38,9 @@ export const registerAuth = async (authData: RegisterUserRequest): Promise<AuthR
 
 export const loginAuth = async (authData: LoginAuthRequest): Promise<AuthResponse> => {
   const user = await authModel.validateUserCredentials(authData.email, authData.password);
-  
+
   if (!user) {
-    throw new Error("Email hoặc mật khẩu không chính xác");
+    throw new Error("Email hoặc mật khẩu không đúng");
   }
 
   // Generate tokens
@@ -47,7 +49,7 @@ export const loginAuth = async (authData: LoginAuthRequest): Promise<AuthRespons
 
   // Return user without password
   const { password, ...userWithoutPassword } = user;
-  
+
   return {
     user: userWithoutPassword as User,
     token: accessToken
@@ -58,14 +60,14 @@ export const refreshTokenAuth = async (refreshToken: string): Promise<{ accessTo
   try {
     const { verifyRefreshToken } = await import('../utils/jwt.js');
     const decoded = verifyRefreshToken(refreshToken);
-    
+
     const user = await authModel.findUserById(decoded.userId);
     if (!user) {
       throw new Error('Người dùng không tồn tại');
     }
 
     const newAccessToken = generateAccessToken(user);
-    
+
     return {
       accessToken: newAccessToken
     };
@@ -76,7 +78,7 @@ export const refreshTokenAuth = async (refreshToken: string): Promise<{ accessTo
 
 export const getProfileAuth = async (userId: string): Promise<Omit<User, 'password'>> => {
   const user = await authModel.findUserById(userId);
-  
+
   if (!user) {
     throw new Error('Người dùng không tồn tại');
   }

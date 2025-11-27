@@ -198,3 +198,76 @@ export const deleteAttemptsByQuizId = async (quizId: string): Promise<boolean> =
     return false;
   }
 };
+
+/**
+ * Get all attempts for a course (for instructors) with user info
+ */
+export const getAttemptsByCourseId = async (courseId: string): Promise<any[]> => {
+  try {
+    const collection = getCollection<QuizAttempt>(CollectionName.QUIZ_ATTEMPTS);
+    
+    console.log('🔍 Fetching attempts for courseId:', courseId);
+    console.log('🔍 Collection name:', CollectionName.QUIZ_ATTEMPTS);
+    
+    // Check with ObjectId
+    const countWithObjectId = await collection.countDocuments({ courseId: new ObjectId(courseId) });
+    console.log('🔍 Count with ObjectId:', countWithObjectId);
+    
+    // Check with string (for legacy data)
+    const countWithString = await collection.countDocuments({ courseId: courseId as any });
+    console.log('🔍 Count with string:', countWithString);
+    
+    // Use $or to match both ObjectId and string formats
+    const attempts = await collection.aggregate([
+      { 
+        $match: { 
+          $or: [
+            { courseId: new ObjectId(courseId) },
+            { courseId: courseId }
+          ]
+        } 
+      },
+      {
+        $lookup: {
+          from: CollectionName.USERS,
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      { $unwind: { path: '$userInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          userId: 1,
+          courseId: 1,
+          lectureId: 1,
+          quizId: 1,
+          answers: 1,
+          score: 1,
+          totalQuestions: 1,
+          correctAnswers: 1,
+          passed: 1,
+          attemptedAt: 1,
+          user: {
+            _id: '$userInfo._id',
+            name: '$userInfo.name',
+            email: '$userInfo.email',
+            avatarUrl: '$userInfo.avatarUrl'
+          }
+        }
+      },
+      { $sort: { attemptedAt: -1 } }
+    ]).toArray();
+    
+    console.log('🔍 Aggregation result count:', attempts.length);
+    if (attempts.length > 0) {
+      console.log('🔍 First attempt sample:', JSON.stringify(attempts[0], null, 2));
+    }
+    
+    return attempts;
+  } catch (error) {
+    console.error('Lỗi get attempts by course id:', error);
+    return [];
+  }
+};

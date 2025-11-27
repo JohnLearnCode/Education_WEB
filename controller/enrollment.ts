@@ -101,6 +101,37 @@ export const getMyEnrollments = async (
 };
 
 /**
+ * Get all enrolled courses with details by current user
+ */
+export const getMyEnrolledCoursesWithDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.userId;
+    if (!userId) {
+      return ResponseHelper.error(
+        res,
+        'Unauthorized',
+        StatusCodes.UNAUTHORIZED.toString()
+      );
+    }
+
+    const enrolledCourses = await enrollmentService.getEnrolledCoursesWithDetails(userId);
+    
+    return ResponseHelper.success(
+      res,
+      'Lấy danh sách khóa học đã đăng ký thành công',
+      enrolledCourses,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get enrollment for a specific course by current user
  */
 export const getMyEnrollmentByCourse = async (

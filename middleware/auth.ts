@@ -2,20 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, extractTokenFromHeader } from '../utils/jwt.js';
 import { ResponseHelper } from '../utils/response.js';
 import { StatusCodes } from 'http-status-codes';
-
-// Extend Request interface to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        username: string;
-        isInstructor: boolean;
-      };
-    }
-  }
-}
+import '../types/express/index.js';
 
 /**
  * JWT Authentication Middleware
@@ -72,7 +59,7 @@ export const requireInstructor = async (
       return;
     }
 
-    if (!req.user.isInstructor) {
+    if (!(req.user as any).isInstructor) {
       ResponseHelper.error(
         res,
         'Instructor access required',

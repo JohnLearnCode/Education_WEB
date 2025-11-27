@@ -8,7 +8,7 @@ import { ObjectId } from 'mongodb';
 // Answer structure for each question
 export interface QuestionAnswer {
   questionId: string;
-  selectedAnswerIndex: number;
+  selectedAnswerIds: string[]; // Mảng ID của các đáp án được chọn (hỗ trợ multiple choice)
 }
 
 // QuizAttempt Entity Interface

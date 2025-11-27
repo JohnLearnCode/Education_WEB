@@ -22,6 +22,11 @@ router.get(
   courseController.getCourseById
 );
 
+router.get(
+  '/:id/curriculum',
+  courseController.getCourseCurriculum
+);
+
 // Instructor routes (protected)
 router.post(
   '/',

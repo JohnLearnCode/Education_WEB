@@ -18,7 +18,6 @@ export const registerAuth = async (authData: RegisterUserRequest): Promise<User 
     const hashedPassword = await hashPassword(authData.password);
 
     const newAuth = {
-      username: authData.username,
       password: hashedPassword,
       name: authData.name,
       email: authData.email,
@@ -26,6 +25,7 @@ export const registerAuth = async (authData: RegisterUserRequest): Promise<User 
       phoneNumber: authData.phoneNumber || null,
       avatarUrl: authData.avatarUrl || null,
       isInstructor: authData.isInstructor || false,
+      isAdmin: authData.isAdmin || false,
       enrolledCourseIds: [],
       createdAt: new Date(),
       updatedAt: new Date()
@@ -51,12 +51,15 @@ export const findUserByEmail = async (email: string): Promise<User | null> => {
   })
 }
 
-export const findUserByUsername = async (username: string): Promise<User | null> => {
+export const findUserByPhoneNumber = async (phoneNumber: string): Promise<User | null> => {
   const collection = getCollection<User>(CollectionName.USERS);
   return await collection.findOne({
-    username: username
+    phoneNumber: phoneNumber
   })
 }
+
+
+
 
 export const validateUserCredentials = async (email: string, password: string): Promise<User | null> => {
   try {

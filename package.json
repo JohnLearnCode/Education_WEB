@@ -4,9 +4,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "ts-node seed.ts",
-    "seed:admin": "ts-node seedAdmin.ts",
-    "dev": "nodemon --exec tsx app.ts"
+    "seed": "tsx seedComplaints.ts",
+    "seed:quiz": "tsx scripts/seedQuiz.ts",
+    "seed:complaints": "tsx scripts/seedComplaints.ts",
+    "migrate:add-isadmin": "tsx scripts/addIsAdminField.ts",
+    "create:admin": "tsx scripts/createAdminUser.ts",
+    "dev": "nodemon --exec tsx app.ts",
+    "build": "tsc",
+    "start": "tsx app.ts"
   },
   "author": "",
   "license": "ISC",
@@ -25,7 +30,10 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemon": "^3.1.10",
-    "tsx": "^4.20.6"
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "tsx": "^4.20.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -34,6 +42,12 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.7.0",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth20": "^2.0.17",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "i": "^0.3.7",
+    "npm": "^11.6.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

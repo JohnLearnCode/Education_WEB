@@ -30,6 +30,12 @@ router.get(
 );
 
 router.get(
+  '/my-enrolled-courses',
+  authenticateToken,
+  enrollmentController.getMyEnrolledCoursesWithDetails
+);
+
+router.get(
   '/course/:courseId/my-enrollment',
   authenticateToken,
   enrollmentController.getMyEnrollmentByCourse
