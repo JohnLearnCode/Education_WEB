@@ -34,8 +34,8 @@ import adminRoutes from './router/admin.js';
 import adminUsersRoutes from './router/adminUsers.js';
 import adminCoursesRoutes from './router/adminCourses.js';
 import adminOrdersRoutes from './router/adminOrders.js';
-import complaintRoutes from './router/complaint.js';
 import adminComplaintsRoutes from './router/adminComplaints.js';
+import complaintRoutes from './router/complaint.js';
 
 // Import middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
