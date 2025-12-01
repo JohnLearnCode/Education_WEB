@@ -206,3 +206,65 @@ export const getTotalRevenue = async (): Promise<number> => {
     return 0;
   }
 };
+
+/**
+ * Update order payment method
+ */
+export const updateOrderPaymentMethod = async (
+  orderId: string,
+  paymentMethod: string
+): Promise<Order | null> => {
+  try {
+    const collection = getCollection<Order>(CollectionName.ORDERS);
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(orderId) },
+      {
+        $set: {
+          paymentMethod,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      return await collection.findOne({ _id: new ObjectId(orderId) });
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Lỗi update order payment method:', error);
+    return null;
+  }
+};
+
+/**
+ * Update order transaction ID (for payment gateway reference)
+ */
+export const updateOrderTransactionId = async (
+  orderId: string,
+  transactionId: string
+): Promise<Order | null> => {
+  try {
+    const collection = getCollection<Order>(CollectionName.ORDERS);
+
+    const result = await collection.updateOne(
+      { _id: new ObjectId(orderId) },
+      {
+        $set: {
+          transactionId,
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      return await collection.findOne({ _id: new ObjectId(orderId) });
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Lỗi update order transaction id:', error);
+    return null;
+  }
+};

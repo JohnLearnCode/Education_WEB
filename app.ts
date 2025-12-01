@@ -36,6 +36,7 @@ import adminCoursesRoutes from './router/adminCourses.js';
 import adminOrdersRoutes from './router/adminOrders.js';
 import adminComplaintsRoutes from './router/adminComplaints.js';
 import complaintRoutes from './router/complaint.js';
+import sepayPaymentRoutes from './router/sepayPayment.js';
 
 // Import middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -112,6 +113,7 @@ app.use('/api/admin/courses', adminCoursesRoutes);
 app.use('/api/admin/orders', adminOrdersRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin/complaints', adminComplaintsRoutes);
+app.use('/api/payment/sepay', sepayPaymentRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

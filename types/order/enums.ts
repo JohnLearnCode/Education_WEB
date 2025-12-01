@@ -10,7 +10,10 @@ export enum PaymentMethod {
   PAYPAL = "paypal",
   BANK_TRANSFER = "bank_transfer",
   MOMO = "momo",
-  VNPAY = "vnpay"
+  VNPAY = "vnpay",
+  // SePay payment methods
+  SEPAY_BANK_TRANSFER = "sepay_bank_transfer",
+  SEPAY_NAPAS = "sepay_napas_bank_transfer"
 }
 
 export enum OrderMessage {
