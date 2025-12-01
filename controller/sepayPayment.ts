@@ -6,8 +6,7 @@ import { ResponseHelper } from '../utils/response.js';
 import {
   InitSepayPaymentRequest,
   SepayWebhookData,
-  SepayMessage,
-  SepayTransactionStatus
+  SepayMessage
 } from '../types/payment/sepay.js';
 
 /**
@@ -239,15 +238,30 @@ export const manualCompletePayment = async (
       );
     }
 
-    // Simulate webhook data
+    // Simulate webhook data with actual SePay structure
     const webhookData: SepayWebhookData = {
-      order_invoice_number: orderId,
-      transaction_id: `MANUAL_${Date.now()}`,
-      transaction_status: SepayTransactionStatus.SUCCESS,
-      amount: order.totalAmount,
-      currency: 'VND',
-      payment_method: order.paymentMethod,
-      timestamp: new Date().toISOString()
+      timestamp: Date.now(),
+      notification_type: 'ORDER_PAID',
+      order: {
+        id: `manual_${orderId}`,
+        order_id: `MANUAL_${Date.now()}`,
+        order_status: 'CAPTURED',
+        order_currency: 'VND',
+        order_amount: order.totalAmount.toString(),
+        order_invoice_number: orderId,
+        custom_data: [],
+        order_description: `Manual completion for order ${orderId}`
+      },
+      transaction: {
+        id: `tx_manual_${Date.now()}`,
+        payment_method: order.paymentMethod,
+        transaction_id: `MANUAL_${Date.now()}`,
+        transaction_type: 'PAYMENT',
+        transaction_date: new Date().toISOString(),
+        transaction_status: 'APPROVED',
+        transaction_amount: order.totalAmount.toString(),
+        transaction_currency: 'VND'
+      }
     };
 
     console.log('🔧 Manual payment completion triggered for order:', orderId);

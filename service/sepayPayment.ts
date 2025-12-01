@@ -85,13 +85,31 @@ export const initiateSepayPayment = async (
 
 /**
  * Handle SePay webhook callback
+ * Webhook payload structure:
+ * - notification_type: ORDER_PAID, ORDER_FAILED, etc.
+ * - order.order_invoice_number: Our orderId
+ * - order.order_status: CAPTURED, PENDING, etc.
+ * - transaction.transaction_status: APPROVED, DECLINED, etc.
+ * - transaction.transaction_id: SePay transaction ID
  */
 export const handleSepayWebhook = async (
   webhookData: SepayWebhookData
 ): Promise<{ success: boolean; message: string }> => {
-  const { order_invoice_number, transaction_status, transaction_id } = webhookData;
+  // Extract data from nested structure
+  const { notification_type, order: orderData, transaction } = webhookData;
+  const order_invoice_number = orderData?.order_invoice_number;
+  const transaction_status = transaction?.transaction_status;
+  const transaction_id = transaction?.transaction_id;
+  const order_status = orderData?.order_status;
 
-  // Get order
+  console.log(`📋 Processing webhook: type=${notification_type}, orderId=${order_invoice_number}, txStatus=${transaction_status}, orderStatus=${order_status}`);
+
+  if (!order_invoice_number) {
+    console.error('SePay Webhook: Missing order_invoice_number');
+    return { success: false, message: 'Missing order_invoice_number' };
+  }
+
+  // Get order from database
   const order = await orderModel.getOrderById(order_invoice_number);
   
   if (!order) {
@@ -99,53 +117,55 @@ export const handleSepayWebhook = async (
     return { success: false, message: SepayMessage.ORDER_NOT_FOUND };
   }
 
-  // Process based on transaction status
-  switch (transaction_status) {
-    case SepayTransactionStatus.SUCCESS:
-      // Update order status to completed
-      await orderModel.updateOrderStatus(order_invoice_number, 'completed');
-      
-      // Save transaction ID
+  // Process based on notification type and transaction status
+  // ORDER_PAID with APPROVED = successful payment
+  if (notification_type === 'ORDER_PAID' && transaction_status === 'APPROVED') {
+    // Update order status to completed
+    await orderModel.updateOrderStatus(order_invoice_number, 'completed');
+    
+    // Save transaction ID
+    if (transaction_id) {
       await orderModel.updateOrderTransactionId(order_invoice_number, transaction_id);
+    }
 
-      // Auto-enroll user in purchased courses
-      for (const course of order.courses) {
-        try {
-          const existingEnrollment = await enrollmentService.getEnrollmentByUserAndCourse(
-            order.userId.toString(),
-            course.courseId
-          );
+    // Auto-enroll user in purchased courses
+    for (const course of order.courses) {
+      try {
+        const existingEnrollment = await enrollmentService.getEnrollmentByUserAndCourse(
+          order.userId.toString(),
+          course.courseId
+        );
 
-          if (!existingEnrollment) {
-            await enrollmentService.enrollCourse(course.courseId, order.userId.toString());
-          }
-        } catch (error) {
-          console.error(`Error enrolling user in course ${course.courseId}:`, error);
+        if (!existingEnrollment) {
+          await enrollmentService.enrollCourse(course.courseId, order.userId.toString());
+          console.log(`✅ User ${order.userId} enrolled in course ${course.courseId}`);
         }
+      } catch (error) {
+        console.error(`Error enrolling user in course ${course.courseId}:`, error);
       }
+    }
 
-      console.log(`SePay Webhook: Payment successful for order ${order_invoice_number}`);
-      return { success: true, message: SepayMessage.PAYMENT_SUCCESS };
-
-    case SepayTransactionStatus.FAILED:
-      await orderModel.updateOrderStatus(order_invoice_number, 'failed');
-      console.log(`SePay Webhook: Payment failed for order ${order_invoice_number}`);
-      return { success: true, message: SepayMessage.PAYMENT_FAILED };
-
-    case SepayTransactionStatus.CANCELLED:
-      await orderModel.updateOrderStatus(order_invoice_number, 'cancelled');
-      console.log(`SePay Webhook: Payment cancelled for order ${order_invoice_number}`);
-      return { success: true, message: SepayMessage.PAYMENT_CANCELLED };
-
-    case SepayTransactionStatus.PENDING:
-      // Order remains in pending status
-      console.log(`SePay Webhook: Payment pending for order ${order_invoice_number}`);
-      return { success: true, message: 'Đang chờ xử lý thanh toán' };
-
-    default:
-      console.warn(`SePay Webhook: Unknown status ${transaction_status} for order ${order_invoice_number}`);
-      return { success: false, message: 'Trạng thái thanh toán không xác định' };
+    console.log(`SePay Webhook: Payment successful for order ${order_invoice_number}`);
+    return { success: true, message: SepayMessage.PAYMENT_SUCCESS };
   }
+
+  // ORDER_FAILED or DECLINED transaction
+  if (notification_type === 'ORDER_FAILED' || transaction_status === 'DECLINED') {
+    await orderModel.updateOrderStatus(order_invoice_number, 'failed');
+    console.log(`SePay Webhook: Payment failed for order ${order_invoice_number}`);
+    return { success: true, message: SepayMessage.PAYMENT_FAILED };
+  }
+
+  // ORDER_CANCELLED
+  if (notification_type === 'ORDER_CANCELLED') {
+    await orderModel.updateOrderStatus(order_invoice_number, 'cancelled');
+    console.log(`SePay Webhook: Payment cancelled for order ${order_invoice_number}`);
+    return { success: true, message: SepayMessage.PAYMENT_CANCELLED };
+  }
+
+  // Other statuses - log and acknowledge
+  console.log(`SePay Webhook: Received ${notification_type} with status ${transaction_status} for order ${order_invoice_number}`);
+  return { success: true, message: `Received: ${notification_type}` };
 };
 
 /**

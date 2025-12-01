@@ -52,16 +52,44 @@ export interface SepayPaymentResponse {
   orderAmount: number;
 }
 
-// SePay Webhook/Callback data
-export interface SepayWebhookData {
+// SePay Webhook/Callback data (actual structure from SePay)
+export interface SepayWebhookOrder {
+  id: string;
+  order_id: string;
+  order_status: string; // CAPTURED, PENDING, etc.
+  order_currency: string;
+  order_amount: string;
   order_invoice_number: string;
-  transaction_id: string;
-  transaction_status: 'SUCCESS' | 'FAILED' | 'PENDING' | 'CANCELLED';
-  amount: number;
-  currency: string;
+  custom_data: any[];
+  user_agent?: string;
+  ip_address?: string;
+  order_description?: string;
+}
+
+export interface SepayWebhookTransaction {
+  id: string;
   payment_method: string;
-  timestamp: string;
-  signature?: string;
+  transaction_id: string;
+  transaction_type: string;
+  transaction_date: string;
+  transaction_status: string; // APPROVED, DECLINED, etc.
+  transaction_amount: string;
+  transaction_currency: string;
+  authentication_status?: string;
+  card_number?: string | null;
+  card_holder_name?: string | null;
+  card_expiry?: string | null;
+  card_funding_method?: string | null;
+  card_brand?: string | null;
+}
+
+export interface SepayWebhookData {
+  timestamp: number;
+  notification_type: string; // ORDER_PAID, ORDER_FAILED, etc.
+  order: SepayWebhookOrder;
+  transaction: SepayWebhookTransaction;
+  customer?: any;
+  agreement?: any;
 }
 
 // Payment status enum
