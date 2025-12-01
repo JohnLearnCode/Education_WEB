@@ -131,4 +131,30 @@ router.post(
   sepayController.handleWebhook
 );
 
+/**
+ * @swagger
+ * /api/payment/sepay/manual-complete/{orderId}:
+ *   post:
+ *     summary: Hoàn thành thanh toán thủ công (chỉ dùng cho development)
+ *     tags: [Payment - SePay]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thanh toán đã được hoàn thành
+ *       403:
+ *         description: Chỉ khả dụng trong môi trường development
+ */
+router.post(
+  '/manual-complete/:orderId',
+  authenticateToken,
+  sepayController.manualCompletePayment
+);
+
 export default router;
