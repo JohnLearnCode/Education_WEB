@@ -13,7 +13,7 @@ const getBaseUrl = (): string => {
   const protocol = process.env.FRONTEND_PROTOCOL || 'http';
   const host = process.env.FRONTEND_HOST || 'localhost';
   const port = process.env.FRONTEND_PORT || '3000';
-  return `${protocol}://${host}:${port}`;
+  return `${protocol}://${host}`;
 };
 
 /**
