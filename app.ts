@@ -81,6 +81,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/ping', (req, res) => {
+  return ResponseHelper.success(res, 'pong');
+});
+
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
