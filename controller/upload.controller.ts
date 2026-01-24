@@ -51,11 +51,8 @@ export const uploadVideoHandler = async (req: Request, res: Response, next: Next
       );
     }
     
-    // Convert buffer to base64
-    const base64Video = bufferToBase64(req.file.buffer, req.file.mimetype);
-    
-    // Upload to Cloudinary
-    const url = await uploadVideo(base64Video, 'videos/lectures');
+    // Upload buffer directly to Cloudinary (supports large files)
+    const url = await uploadVideo(req.file.buffer, 'videos/lectures');
     
     return ResponseHelper.success(
       res,

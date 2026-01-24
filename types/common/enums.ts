@@ -20,7 +20,10 @@ export enum CollectionName {
   CARTS = 'carts',
   INSTRUCTOR_EARNINGS = 'instructor_earnings',
   WISHLISTS = 'wishlists',
-  COMPLAINTS = 'complaints'
+  COMPLAINTS = 'complaints',
+  PROMOTIONS = 'promotions',
+  COUPONS = 'coupons',
+  COUPON_USAGES = 'coupon_usages'
 }
 
 // Quiz Type Enum

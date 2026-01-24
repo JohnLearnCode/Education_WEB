@@ -73,33 +73,42 @@ export const uploadMultipleImages = async (
 }
 
 /**
- * Upload video to Cloudinary
- * @param base64Video - Base64 encoded video
+ * Upload video to Cloudinary using stream (supports large files)
+ * @param videoBuffer - Video buffer
  * @param folder - Folder name on Cloudinary (default: 'videos/lectures')
  * @returns Secure URL of uploaded video
  */
 export const uploadVideo = async (
-  base64Video: string,
+  videoBuffer: Buffer,
   folder: string = 'videos/lectures'
 ): Promise<string> => {
-  try {
-    const result = await cloudinary.uploader.upload(base64Video, {
-      folder,
-      resource_type: "video",
-      chunk_size: 6000000, // 6MB chunks for large files
-      eager: [
-        { streaming_profile: "hd", format: "m3u8" }
-      ],
-      eager_async: true
-    });
-    return result.secure_url;
-  } catch (error: any) {
-    console.error('Cloudinary upload video error:', error);
-    throw new InternalServerError(
-      'Tải video lên cloud thất bại',
-      UploadErrorCode.UPLOAD_FAILED
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "video",
+        chunk_size: 20000000, // 20MB chunks for large files
+        eager: [
+          { streaming_profile: "hd", format: "m3u8" }
+        ],
+        eager_async: true,
+        timeout: 600000, // 10 minutes timeout
+      },
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload video error:', error);
+          reject(new InternalServerError(
+            'Tải video lên cloud thất bại',
+            UploadErrorCode.UPLOAD_FAILED
+          ));
+        } else {
+          resolve(result!.secure_url);
+        }
+      }
     );
-  }
+
+    uploadStream.end(videoBuffer);
+  });
 }
 
 /**

@@ -67,7 +67,7 @@ export const initiateSepayPayment = async (
     order_description: orderDescription,
     success_url: `${baseUrl}/payment/success?orderId=${orderId}`,
     error_url: `${baseUrl}/payment/error?orderId=${orderId}`,
-    cancel_url: `${baseUrl}/payment/cancel?orderId=${orderId}`,
+    cancel_url: `${baseUrl}/courses`,
   });
 
   console.log('📝 SePay Checkout Fields:', JSON.stringify(checkoutFields, null, 2));

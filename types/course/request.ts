@@ -22,6 +22,11 @@ export interface Course extends BaseEntity {
   totalDuration: string;
   lectureCount: number;
   studentCount: number;
+  // Sale fields
+  salePrice?: number;        // Override price during sale
+  discountPercent?: number;  // Alternative: percentage discount (capped at 100)
+  saleStartDate?: Date;      // When sale becomes active
+  saleEndDate?: Date;        // When sale expires
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +53,11 @@ export interface UpdateCourseRequest {
   imageUrl?: string;
   totalDuration?: string;
   lectureCount?: number;
+  // Sale fields
+  salePrice?: number;
+  discountPercent?: number;
+  saleStartDate?: Date;
+  saleEndDate?: Date;
 }
 
 // Course Query Parameters

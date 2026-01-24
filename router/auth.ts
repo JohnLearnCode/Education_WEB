@@ -38,6 +38,13 @@ router.get(
   authController.getProfile
 );
 
+// Logout (protected route)
+router.post(
+  '/logout',
+  authenticateToken,
+  authController.logout
+);
+
 // Google OAuth routes
 router.get(
   '/google',

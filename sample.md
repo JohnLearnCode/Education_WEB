@@ -1,0 +1,1 @@
+đây là video mô phỏng tính năng đăng ký khóa học, thanh toán bằng SePay, và trải nghiệm học tập trên nền tảng
