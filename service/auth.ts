@@ -1,6 +1,7 @@
 import { RegisterUserRequest, LoginAuthRequest, User, AuthResponse } from "../types/auth/request";
 import * as authModel from '../model/auth.js'
 import { generateAccessToken, generateRefreshToken } from '../utils/jwt.js';
+import { revokeToken } from './tokenBlacklist.js';
 
 export const registerAuth = async (authData: RegisterUserRequest): Promise<AuthResponse> => {
   // Check if user already exists by email
@@ -86,4 +87,8 @@ export const getProfileAuth = async (userId: string): Promise<Omit<User, 'passwo
   // Return user without password
   const { password, ...userWithoutPassword } = user;
   return userWithoutPassword as Omit<User, 'password'>;
+};
+
+export const logoutAuth = async (token: string): Promise<void> => {
+  await revokeToken(token);
 };

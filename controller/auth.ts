@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes';
 import { RegisterUserRequest, LoginAuthRequest } from '../types/auth/request.js';
 import { AuthMessage } from '../types/auth/enums.js';
 import { ResponseHelper } from '../utils/response.js';
+import { extractTokenFromHeader } from '../utils/jwt.js';
 
 export const registerAuth = async (
   req: Request<{}, {}, RegisterUserRequest>,
@@ -80,6 +81,33 @@ export const getProfile = async (
       res,
       'Get profile successfully',
       user,
+      StatusCodes.OK
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const token = extractTokenFromHeader(req.headers.authorization);
+    if (!token) {
+      return ResponseHelper.error(
+        res,
+        'Token is required',
+        StatusCodes.BAD_REQUEST.toString()
+      );
+    }
+
+    await authService.logoutAuth(token);
+    return ResponseHelper.success(
+      res,
+      'Logged out successfully',
+      null,
       StatusCodes.OK
     );
   } catch (error) {

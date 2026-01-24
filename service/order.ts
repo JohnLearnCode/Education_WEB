@@ -8,18 +8,23 @@ import {
 import * as orderModel from '../model/order.js';
 import * as courseModel from '../model/course.js';
 import * as enrollmentService from './enrollment.js';
+import * as pricingService from './pricing.js';
+import * as couponModel from '../model/coupon.js';
 import { OrderMessage } from '../types/order/enums.js';
+import { ObjectId } from 'mongodb';
 
 /**
- * Create a new order
+ * Create a new order with discount calculations
  */
 export const createOrder = async (
   orderData: CreateOrderRequest,
   userId: string
 ): Promise<OrderResponse> => {
-  // Validate courses exist and get course details
+  // Validate courses exist and get course details with pricing
   const courses: OrderItem[] = [];
-  let totalAmount = 0;
+  let subtotal = 0;
+  let totalDiscount = 0;
+  let couponId: ObjectId | undefined;
 
   for (const courseId of orderData.courseIds) {
     // Check if course exists
@@ -34,27 +39,65 @@ export const createOrder = async (
       throw new Error(`${OrderMessage.ALREADY_PURCHASED}: ${course.title}`);
     }
 
-    // Add course to order
-    courses.push({
+    // Calculate pricing with discounts (excluding coupon for now)
+    const priceResult = await pricingService.calculateFinalPrice(courseId);
+
+    // Add course to order with discount info
+    const orderItem: OrderItem = {
       courseId: course._id!.toString(),
       title: course.title,
-      price: course.price,
-      thumbnail: course.imageUrl
-    });
+      price: priceResult.finalPrice,
+      thumbnail: course.imageUrl,
+      originalPrice: priceResult.originalPrice,
+      finalPrice: priceResult.finalPrice,
+      discountAmount: priceResult.discount,
+      discountSource: priceResult.appliedDiscount.type
+    };
 
-    totalAmount += course.price;
+    courses.push(orderItem);
+    subtotal += priceResult.originalPrice;
+    totalDiscount += priceResult.discount;
   }
 
   if (courses.length === 0) {
     throw new Error(OrderMessage.EMPTY_CART);
   }
 
+  // Apply coupon if provided
+  let couponDiscount = 0;
+  if (orderData.couponCode) {
+    const priceAfterSaleDiscounts = subtotal - totalDiscount;
+    const couponResult = await pricingService.validateCoupon(
+      orderData.couponCode,
+      orderData.courseIds,
+      priceAfterSaleDiscounts,
+      userId
+    );
+
+    if (couponResult.valid && couponResult.coupon) {
+      couponDiscount = couponResult.coupon.discountAmount;
+      totalDiscount += couponDiscount;
+
+      // Get coupon ID for reference
+      const coupon = await couponModel.getCouponByCode(orderData.couponCode);
+      if (coupon) {
+        couponId = coupon._id;
+      }
+    }
+  }
+
+  const totalAmount = Math.max(0, subtotal - totalDiscount);
+
   // Create order
   const order = await orderModel.createOrder({
     userId,
     courses,
     totalAmount,
-    paymentMethod: orderData.paymentMethod
+    paymentMethod: orderData.paymentMethod,
+    subtotal,
+    totalDiscount,
+    couponCode: orderData.couponCode,
+    couponId
   });
 
   if (!order) {
@@ -138,8 +181,25 @@ export const updateOrderStatus = async (
     throw new Error(OrderMessage.FAIL_UPDATE);
   }
 
-  // If order is completed, auto-enroll user in courses
+  // If order is completed, auto-enroll user in courses and record coupon usage
   if (updateData.status === 'completed') {
+    // Record coupon usage if coupon was applied
+    if (updatedOrder.couponId && updatedOrder.couponCode) {
+      try {
+        await couponModel.incrementCouponUsage(updatedOrder.couponId.toString());
+        await couponModel.recordCouponUsage({
+          couponId: updatedOrder.couponId,
+          userId: new ObjectId(userId),
+          orderId: new ObjectId(orderId),
+          discountAmount: updatedOrder.totalDiscount || 0
+        });
+      } catch (error) {
+        console.error(`Error recording coupon usage for order ${orderId}:`, error);
+        // Continue even if coupon recording fails
+      }
+    }
+
+    // Auto-enroll user in courses
     for (const course of updatedOrder.courses) {
       try {
         // Check if already enrolled

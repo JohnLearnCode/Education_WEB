@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, extractTokenFromHeader } from '../utils/jwt.js';
 import { ResponseHelper } from '../utils/response.js';
 import { StatusCodes } from 'http-status-codes';
+import { isTokenRevoked } from '../service/tokenBlacklist.js';
 
 /**
  * JWT Authentication Middleware
@@ -20,6 +21,17 @@ export const authenticateToken = async (
       ResponseHelper.error(
         res,
         'Access token is required',
+        StatusCodes.UNAUTHORIZED.toString()
+      );
+      return;
+    }
+
+    // Kiểm tra token có bị revoke không
+    const revoked = await isTokenRevoked(token);
+    if (revoked) {
+      ResponseHelper.error(
+        res,
+        'Token has been revoked',
         StatusCodes.UNAUTHORIZED.toString()
       );
       return;

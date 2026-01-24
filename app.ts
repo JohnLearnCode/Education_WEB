@@ -9,6 +9,7 @@ import passport from 'passport';
 
 // Import configurations
 import { connectDB, closeDB } from './config/database.js';
+import { connectRedis } from './config/redis.js';
 import swaggerSpec from './config/swagger.js';
 import { configurePassport } from './config/passport.js';
 
@@ -37,6 +38,14 @@ import adminOrdersRoutes from './router/adminOrders.js';
 import adminComplaintsRoutes from './router/adminComplaints.js';
 import complaintRoutes from './router/complaint.js';
 import sepayPaymentRoutes from './router/sepayPayment.js';
+import videoUploadRoutes from './router/videoUpload.js';
+import adminPromotionRoutes from './router/adminPromotion.js';
+import adminCouponRoutes from './router/adminCoupon.js';
+import couponRoutes from './router/coupon.js';
+
+// Import BullMQ worker
+import { createVideoWorker } from './config/bullmq.js';
+import { processVideoJob } from './jobs/videoProcessor.js';
 
 // Import middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -117,7 +126,11 @@ app.use('/api/admin/courses', adminCoursesRoutes);
 app.use('/api/admin/orders', adminOrdersRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin/complaints', adminComplaintsRoutes);
+app.use('/api/admin/promotions', adminPromotionRoutes);
+app.use('/api/admin/coupons', adminCouponRoutes);
+app.use('/api', couponRoutes);
 app.use('/api/payment/sepay', sepayPaymentRoutes);
+app.use('/api/video', videoUploadRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -132,6 +145,19 @@ const startServer = async () => {
   try {
     // Kết nối MongoDB trước
     await connectDB();
+
+    // Kết nối Redis
+    await connectRedis();
+
+    // Start video processing worker
+    const videoWorker = createVideoWorker(processVideoJob);
+    videoWorker.on('completed', (job) => {
+      console.log(`✅ Video job ${job.id} completed successfully`);
+    });
+    videoWorker.on('failed', (job, err) => {
+      console.error(`❌ Video job ${job?.id} failed:`, err.message);
+    });
+    console.log('🎬 Video processing worker started');
 
     // Start Express server
     app.listen(PORT, () => {

@@ -59,3 +59,7 @@ Thumbs.db
 # Database
 *.sqlite
 *.db
+
+# Video processing temp files
+/temp/
+temp/

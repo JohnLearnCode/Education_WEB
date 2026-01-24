@@ -11,6 +11,10 @@ export const createOrder = async (orderData: {
   courses: OrderItem[];
   totalAmount: number;
   paymentMethod: string;
+  subtotal?: number;
+  totalDiscount?: number;
+  couponCode?: string;
+  couponId?: ObjectId;
 }): Promise<Order | null> => {
   try {
     const collection = getCollection<Order>(CollectionName.ORDERS);
@@ -22,6 +26,10 @@ export const createOrder = async (orderData: {
       totalAmount: orderData.totalAmount,
       status: "pending",
       paymentMethod: orderData.paymentMethod,
+      subtotal: orderData.subtotal,
+      totalDiscount: orderData.totalDiscount,
+      couponCode: orderData.couponCode,
+      couponId: orderData.couponId,
       createdAt: now,
       updatedAt: now
     };
