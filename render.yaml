@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: education-web-app
+    env: docker
+    plan: free
+    # Các biến cấu hình tự động trỏ vào nhau
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: education-web-redis
+          property: connectionString
+      
+      # Lưu ý: Với Blueprint, bạn vẫn cần vào Dashboard của web service: education-web-app
+      # sau khi deploy xong để điền tay MONGODB_URL và các Secret khác nhằm đảm bảo tính bảo mật.
+
+  - type: redis
+    name: education-web-redis
+    plan: free
+    ipAllowList: []
