@@ -9,33 +9,13 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
-      - MONGODB_URL=mongodb://mongo:27017
-      - DB_NAME=${DB_NAME:-education_platform}
-      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
-      - JWT_SECRET=${JWT_SECRET}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
-      - FRONTEND_URL=${FRONTEND_URL}
-      - FRONTEND_PROTOCOL=${FRONTEND_PROTOCOL}
-      - FRONTEND_HOST=${FRONTEND_HOST}
-      - FRONTEND_PORT=${FRONTEND_PORT}
-      - API_PROTOCOL=${API_PROTOCOL}
-      - API_HOST=${API_HOST}
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
-      - SEPAY_ENV=${SEPAY_ENV}
-      - SEPAY_MERCHANT_ID=${SEPAY_MERCHANT_ID}
-      - SEPAY_SECRET_KEY=${SEPAY_SECRET_KEY}
       - REDIS_URL=redis://redis:6379
     depends_on:
-      mongo:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -57,29 +37,10 @@ services:
     networks:
       - education-network
 
-  mongo:
-    image: mongo:7
-    container_name: education-web-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - education-network
-
 networks:
   education-network:
     driver: bridge
 
 volumes:
-  mongo-data:
-    driver: local
   redis-data:
     driver: local
